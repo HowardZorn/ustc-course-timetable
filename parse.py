@@ -2,6 +2,7 @@ import json
 import argparse
 from icalendar import Calendar, Event
 from datetime import datetime
+import requests
 
 argp = argparse.ArgumentParser()
 argp.add_argument('json_file')
@@ -16,6 +17,11 @@ cal.add('X-WR-TIMEZONE', 'Asia/Shanghai')
 
 j = str(open(args.json_file, 'r', encoding='utf-8').read())
 j = json.loads(j)
+
+holidays = requests.get(
+    "https://api.apihubs.cn/holiday/get?holiday_recess=1")
+holidays = json.loads(holidays.content)['data']['list']
+holidays = [datetime.strptime(str(i['date']), '%Y%m%d').date() for i in holidays]
 
 lesson = {}
 
@@ -45,6 +51,8 @@ for s in j['result']['scheduleList']:
 
 for key, value in course_dict.items():
     summary, location, dtstart, dtend = key
+    if dtstart.date() in holidays and dtend.date() in holidays:
+        continue
     description = '，'.join(value)
     event = Event()
     event.add('summary', summary)
